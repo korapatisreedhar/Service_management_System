@@ -294,8 +294,57 @@ def worker_dashboard():
     conn.close()
 
     return render_template(
-        "worker/dashboard.html",
-        assigned_jobs=assigned_jobs
+    "provider/provider_dashboard.html",
+    assigned_jobs=assigned_jobs
+)
+
+
+@app.route("/provider-profile", methods=["GET", "POST"])
+def provider_profile():
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+
+    if request.method == "POST":
+
+        conn.execute("""
+            UPDATE users
+            SET
+                name=?,
+                phone=?,
+                address=?,
+                profession=?,
+                experience=?
+            WHERE id=?
+        """,
+        (
+            request.form["name"],
+            request.form["phone"],
+            request.form["address"],
+            request.form["profession"],
+            request.form["experience"],
+            session["user_id"]
+        ))
+
+        conn.commit()
+
+        flash(
+            "Profile Updated Successfully",
+            "success"
+        )
+
+    worker = conn.execute(
+        "SELECT * FROM users WHERE id=?",
+        (session["user_id"],)
+    ).fetchone()
+
+    conn.close()
+
+    return render_template(
+        "provider/provider_profile.html",
+        worker=worker
     )
 
 
