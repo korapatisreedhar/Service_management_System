@@ -1,0 +1,306 @@
+/* ==========================
+   GENERAL
+========================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+body{
+    background:#f8f9fa;
+    color:#333;
+}
+
+/* ==========================
+   NAVBAR
+========================== */
+
+.navbar{
+    padding:15px 0;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+.navbar-brand{
+    font-size:28px;
+    font-weight:700;
+    color:#ffffff !important;
+}
+
+.nav-link{
+    color:white !important;
+    margin-left:15px;
+    font-weight:500;
+}
+
+.nav-link:hover{
+    color:#0d6efd !important;
+}
+
+/* ==========================
+   HERO SECTION
+========================== */
+
+.hero-section{
+    background:linear-gradient(
+        rgba(0,0,0,0.5),
+        rgba(0,0,0,0.5)
+    ),
+    url("https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=2070")
+    center center/cover;
+
+    min-height:550px;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    text-align:center;
+    color:white;
+}
+
+.hero-section h1{
+    font-size:60px;
+    font-weight:700;
+}
+
+.hero-section p{
+    font-size:22px;
+    margin:20px 0;
+}
+
+.hero-section .btn{
+    padding:12px 30px;
+    font-size:18px;
+    border-radius:30px;
+}
+
+/* ==========================
+   SEARCH BAR
+========================== */
+
+.form-control-lg{
+    border-radius:50px;
+    padding:15px 25px;
+    box-shadow:0 3px 12px rgba(0,0,0,0.08);
+}
+
+/* ==========================
+   SERVICE CARDS
+========================== */
+
+.service-card{
+    border:none;
+    border-radius:20px;
+    overflow:hidden;
+    transition:0.4s;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    background:white;
+}
+
+.service-card:hover{
+    transform:translateY(-10px);
+    box-shadow:0 10px 25px rgba(0,0,0,0.15);
+}
+
+.service-card .card-body{
+    padding:30px;
+}
+
+.service-card h5{
+    font-weight:600;
+    margin-top:10px;
+}
+
+.service-icon{
+    width:80px;
+    height:80px;
+    margin:auto;
+    background:#eef4ff;
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:#0d6efd;
+}
+
+.service-card .btn{
+    border-radius:30px;
+    padding:10px 20px;
+}
+
+/* ==========================
+   WHY CHOOSE US
+========================== */
+
+.bg-light{
+    background:#ffffff !important;
+}
+
+.bg-light h2{
+    font-weight:700;
+}
+
+.bg-light i{
+    transition:0.3s;
+}
+
+.bg-light i:hover{
+    transform:scale(1.1);
+}
+
+/* ==========================
+   REVIEWS
+========================== */
+
+.card.shadow-sm{
+    border:none;
+    border-radius:15px;
+    transition:0.3s;
+}
+
+.card.shadow-sm:hover{
+    transform:translateY(-5px);
+}
+
+.card.shadow-sm .card-body{
+    padding:25px;
+}
+
+/* ==========================
+   FOOTER
+========================== */
+
+footer{
+    margin-top:50px;
+}
+
+footer h5{
+    font-size:24px;
+    font-weight:700;
+}
+
+footer p{
+    margin-bottom:5px;
+}
+
+/* ==========================
+   LOGIN PAGE
+========================== */
+
+.login-container{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#f4f6f9;
+}
+
+.login-card{
+    width:450px;
+    padding:30px;
+    border-radius:20px;
+    background:white;
+    box-shadow:0 5px 20px rgba(0,0,0,0.1);
+}
+
+/* ==========================
+   REGISTER PAGE
+========================== */
+
+.register-card{
+    width:500px;
+    padding:30px;
+    border-radius:20px;
+    background:white;
+    box-shadow:0 5px 20px rgba(0,0,0,0.1);
+}
+
+/* ==========================
+   DASHBOARD
+========================== */
+
+.dashboard-card{
+    border:none;
+    border-radius:15px;
+    color:white;
+    padding:20px;
+}
+
+.dashboard-card h2{
+    font-weight:700;
+}
+
+.bg-primary-card{
+    background:#0d6efd;
+}
+
+.bg-success-card{
+    background:#198754;
+}
+
+.bg-warning-card{
+    background:#ffc107;
+    color:black;
+}
+
+.bg-danger-card{
+    background:#dc3545;
+}
+
+/* ==========================
+   TABLES
+========================== */
+
+.table{
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+.table th{
+    background:#0d6efd;
+    color:white;
+}
+
+/* ==========================
+   BUTTONS
+========================== */
+
+.btn-primary{
+    border-radius:30px;
+}
+
+.btn-success{
+    border-radius:30px;
+}
+
+.btn-danger{
+    border-radius:30px;
+}
+
+/* ==========================
+   RESPONSIVE
+========================== */
+
+@media(max-width:768px){
+
+    .hero-section h1{
+        font-size:35px;
+    }
+
+    .hero-section p{
+        font-size:18px;
+    }
+
+    .navbar-brand{
+        font-size:22px;
+    }
+
+    .service-card{
+        margin-bottom:20px;
+    }
+
+}
