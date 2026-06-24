@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Management System</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+<!-- Navbar -->
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container">
+
+        <a class="navbar-brand fw-bold" href="/">
+            ServiceHub
+        </a>
+
+        <button class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#navbarNav">
+
+            <span class="navbar-toggler-icon"></span>
+
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+
+            <ul class="navbar-nav ms-auto">
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/services">Services</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/login">Login</a>
+                </li>
+
+                
+
+        
+
+   <li class="nav-item dropdown">
+
+    <a class="nav-link dropdown-toggle"
+       href="#"
+       role="button"
+       data-bs-toggle="dropdown">
+
+        Register
+
+    </a>
+
+    <ul class="dropdown-menu">
+
+        <li>
+            <a class="dropdown-item"
+               href="/register">
+                Customer Registration
+            </a>
+        </li>
+
+        <li>
+            <a class="dropdown-item"
+               href="/worker-register">
+                Worker Registration
+            </a>
+        </li>
+
+    </ul>
+
+</li>
+
+</div>
+
+            </ul>
+
+        </div>
+
+    </div>
+</nav>
+
+
+<!-- Hero Section -->
+
+<section class="hero-section">
+
+    <div class="container text-center">
+
+        <h1 class="display-4 fw-bold">
+            Home Services At Your Doorstep
+        </h1>
+
+        <p class="lead">
+            Trusted Professionals For Every Home Need
+        </p>
+
+        <a href="/services" class="btn btn-primary btn-lg">
+            Explore Services
+        </a>
+
+    </div>
+
+</section>
+
+
+<!-- Search -->
+
+<section class="container my-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-8">
+
+            <input type="text"
+       id="serviceSearch"
+       class="form-control form-control-lg"
+       placeholder="Search Services...">
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- Services Section -->
+
+<section class="container my-5">
+
+    <h2 class="text-center mb-5">
+        Popular Services
+    </h2>
+
+    <div class="row g-4">
+
+        {% for service in services %}
+
+        <div class="col-md-3">
+
+            <div class="card service-card h-100">
+
+                <div class="card-body text-center">
+
+                    <div class="service-icon mb-3">
+                        <i class="fas fa-tools fa-2x"></i>
+                    </div>
+
+                    <h5>{{ service }}</h5>
+
+                    <a href="/book-service"
+                       class="btn btn-success mt-3">
+                        Book Now
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+
+<!-- Why Choose Us -->
+
+<section class="bg-light py-5">
+
+    <div class="container">
+
+        <h2 class="text-center mb-5">
+            Why Choose Us?
+        </h2>
+
+        <div class="row text-center">
+
+            <div class="col-md-4">
+
+                <i class="fas fa-user-check fa-3x text-primary mb-3"></i>
+
+                <h4>Verified Experts</h4>
+
+                <p>
+                    Skilled professionals for quality work.
+                </p>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <i class="fas fa-clock fa-3x text-success mb-3"></i>
+
+                <h4>On-Time Service</h4>
+
+                <p>
+                    Fast and reliable doorstep service.
+                </p>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <i class="fas fa-headset fa-3x text-danger mb-3"></i>
+
+                <h4>24/7 Support</h4>
+
+                <p>
+                    We are always available for your needs.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- Reviews -->
+
+<section class="container py-5">
+
+    <h2 class="text-center mb-5">
+        Customer Reviews
+    </h2>
+
+    <div class="row">
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <h5>⭐⭐⭐⭐⭐</h5>
+
+                    <p>
+                        Excellent service and professional staff.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <h5>⭐⭐⭐⭐⭐</h5>
+
+                    <p>
+                        Quick response and affordable pricing.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <h5>⭐⭐⭐⭐⭐</h5>
+
+                    <p>
+                        Highly recommended home services.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- Footer -->
+
+<footer class="bg-dark text-white py-4">
+
+    <div class="container text-center">
+
+        <h5>ServiceHub</h5>
+
+        <p>
+            Your Trusted Home Service Partner
+        </p>
+
+        <p>
+            © 2026 All Rights Reserved
+        </p>
+
+    </div>
+
+</footer>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+</html>
