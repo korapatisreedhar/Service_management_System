@@ -112,6 +112,9 @@
     {% endwith %}
 
 </div>
+<a href="/dashboard" class="btn btn-secondary mb-3">
+    <i class="fas fa-arrow-left"></i> Back
+</a>
 
 <!-- Booking Table -->
 
@@ -145,6 +148,7 @@
                             <th>Address</th>
                             <th>Date</th>
                             <th>Status</th>
+                            <th>Action</th>
 
                         </tr>
 
@@ -153,60 +157,37 @@
                     <tbody>
 
                         {% for booking in bookings %}
+<tr>
+    <td>{{ booking.id }}</td>
+    <td>{{ booking.service_name }}</td>
+    <td>{{ booking.phone }}</td>
+    <td>{{ booking.address }}</td>
+    <td>{{ booking.booking_date }}</td>
 
-                        <tr>
+    <td>
+        {% if booking.status == 'Pending' %}
+            <span class="badge bg-warning">Pending</span>
+        {% elif booking.status == 'Accepted' %}
+            <span class="badge bg-primary">Accepted</span>
+        {% elif booking.status == 'Completed' %}
+            <span class="badge bg-success">Completed</span>
+        {% else %}
+            <span class="badge bg-danger">Cancelled</span>
+        {% endif %}
+    </td>
 
-                            <td>{{ booking.id }}</td>
+    <td>
+        {% if booking.status != 'Completed' and booking.status != 'Cancelled' %}
+        <a href="{{ url_for('user_cancel_booking', id=booking.id) }}"
+   class="btn btn-danger btn-sm"
+   onclick="return confirm('Are you sure you want to cancel this booking?')">
+    Cancel
+</a>
+        {% endif %}
+    </td>
 
-                            <td>
-                                {{ booking.service_name }}
-                            </td>
-
-                            <td>
-                                {{ booking.phone }}
-                            </td>
-
-                            <td>
-                                {{ booking.address }}
-                            </td>
-
-                            <td>
-                                {{ booking.booking_date }}
-                            </td>
-
-                            <td>
-
-                                {% if booking.status == 'Pending' %}
-
-                                    <span class="badge bg-warning text-dark">
-                                        Pending
-                                    </span>
-
-                                {% elif booking.status == 'Accepted' %}
-
-                                    <span class="badge bg-primary">
-                                        Accepted
-                                    </span>
-
-                                {% elif booking.status == 'Completed' %}
-
-                                    <span class="badge bg-success">
-                                        Completed
-                                    </span>
-
-                                {% else %}
-
-                                    <span class="badge bg-secondary">
-                                        {{ booking.status }}
-                                    </span>
-
-                                {% endif %}
-
-                            </td>
-
-                        </tr>
-
-                        {% endfor %}
+</tr>
+{% endfor %}
 
                     </tbody>
 

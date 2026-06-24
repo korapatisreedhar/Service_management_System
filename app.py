@@ -57,19 +57,30 @@ def init_db():
 
     # Bookings Table
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS bookings(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        worker_id INTEGER,
-        service_name TEXT,
-        phone TEXT,
-        address TEXT,
-        booking_date TEXT,
-        status TEXT DEFAULT 'Pending',
-        FOREIGN KEY(user_id) REFERENCES users(id),
-        FOREIGN KEY(worker_id) REFERENCES users(id)
-    )
-    """)
+CREATE TABLE IF NOT EXISTS bookings(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    user_id INTEGER,
+
+    worker_id INTEGER,
+
+    service_name TEXT,
+
+    category TEXT,
+
+    phone TEXT,
+
+    address TEXT,
+
+    booking_date TEXT,
+
+    status TEXT DEFAULT 'Pending',
+
+    FOREIGN KEY(user_id) REFERENCES users(id),
+
+    FOREIGN KEY(worker_id) REFERENCES users(id)
+)
+""")
 
     conn.commit()
     conn.close()
@@ -107,6 +118,28 @@ def create_admin():
 # Run Database Setup
 init_db()
 create_admin()
+# ==========================
+# DATABASE UPDATE
+# ==========================
+conn = get_db_connection()
+
+try:
+    conn.execute(
+        "ALTER TABLE bookings ADD COLUMN category TEXT"
+    )
+
+    conn.execute(
+        "UPDATE bookings SET category = service_name"
+    )
+
+    conn.commit()
+
+    print("Category column added successfully")
+
+except Exception as e:
+    print("Database already updated:", e)
+
+conn.close()
 
 
 # ==========================
@@ -273,7 +306,6 @@ def worker_register():
             conn.close()
 
     return render_template("auth/worker_register.html")
-
 @app.route("/worker-dashboard")
 def worker_dashboard():
 
@@ -285,19 +317,115 @@ def worker_dashboard():
 
     conn = get_db_connection()
 
+    # Get worker details
+    worker = conn.execute(
+        "SELECT * FROM users WHERE id=?",
+        (session["user_id"],)
+    ).fetchone()
+
+    # Show only matching jobs
     assigned_jobs = conn.execute("""
         SELECT *
         FROM bookings
-        WHERE worker_id=?
-    """, (session["user_id"],)).fetchall()
+        WHERE category=?
+        AND (
+            status='Pending'
+            OR worker_id=?
+        )
+    """,
+    (
+        worker["profession"],
+        session["user_id"]
+    )).fetchall()
 
     conn.close()
 
     return render_template(
-    "provider/provider_dashboard.html",
-    assigned_jobs=assigned_jobs
-)
+        "provider/provider_dashboard.html",
+        assigned_jobs=assigned_jobs,
+        worker=worker
+    )
 
+@app.route("/worker-accept/<int:id>")
+def worker_accept(id):
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+
+    booking = conn.execute(
+        "SELECT * FROM bookings WHERE id=?",
+        (id,)
+    ).fetchone()
+
+    if booking and booking["status"] == "Pending":
+
+        conn.execute("""
+            UPDATE bookings
+            SET worker_id=?,
+                status='Accepted'
+            WHERE id=?
+        """,
+        (
+            session["user_id"],
+            id
+        ))
+
+        conn.commit()
+
+        flash(
+            "Job Accepted Successfully",
+            "success"
+        )
+
+    else:
+
+        flash(
+            "This job has already been taken.",
+            "warning"
+        )
+
+    conn.close()
+
+    return redirect(url_for("worker_dashboard"))
+@app.route("/worker-complete/<int:id>")
+def worker_complete(id):
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+
+    booking = conn.execute(
+        "SELECT * FROM bookings WHERE id=?",
+        (id,)
+    ).fetchone()
+
+    if not booking:
+        flash("Booking Not Found", "danger")
+        conn.close()
+        return redirect(url_for("worker_dashboard"))
+
+    if booking["worker_id"] != session["user_id"]:
+        flash("Unauthorized Action", "danger")
+        conn.close()
+        return redirect(url_for("worker_dashboard"))
+
+    conn.execute("""
+        UPDATE bookings
+        SET status='Completed'
+        WHERE id=?
+    """,
+    (id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    flash("Job Completed Successfully", "success")
+
+    return redirect(url_for("worker_dashboard"))
 
 @app.route("/provider-profile", methods=["GET", "POST"])
 def provider_profile():
@@ -345,6 +473,27 @@ def provider_profile():
     return render_template(
         "provider/provider_profile.html",
         worker=worker
+    )
+
+
+@app.route('/profile')
+def profile():
+
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+
+    user = conn.execute(
+        "SELECT * FROM users WHERE id=?",
+        (session['user_id'],)
+    ).fetchone()
+
+    conn.close()
+
+    return render_template(
+        'customer/profile.html',
+        user=user
     )
 
 
@@ -498,7 +647,29 @@ def my_bookings():
         "customer/bookings.html",
         bookings=bookings
     )
+@app.route("/user-cancel-booking/<int:id>")
+def user_cancel_booking(id):
 
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+
+    conn.execute(
+        """
+        UPDATE bookings
+        SET status='Cancelled'
+        WHERE id=? AND user_id=?
+        """,
+        (id, session["user_id"])
+    )
+
+    conn.commit()
+    conn.close()
+
+    flash("Booking Cancelled Successfully", "success")
+
+    return redirect(url_for("my_bookings"))
 
 
 # ==========================
@@ -513,9 +684,15 @@ def book_service():
     if request.method == "POST":
 
         service_name = request.form["service_name"]
+
+        # Profession matching category
+        category = service_name
+
         phone = request.form["phone"]
         address = request.form["address"]
         booking_date = request.form["booking_date"]
+
+        description = request.form.get("description", "")
 
         conn = get_db_connection()
 
@@ -523,15 +700,17 @@ def book_service():
             INSERT INTO bookings(
                 user_id,
                 service_name,
+                category,
                 phone,
                 address,
                 booking_date
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
             session["user_id"],
             service_name,
+            category,
             phone,
             address,
             booking_date
@@ -540,7 +719,10 @@ def book_service():
         conn.commit()
         conn.close()
 
-        flash("Booking Submitted Successfully", "success")
+        flash(
+            "Booking Submitted Successfully",
+            "success"
+        )
 
         return redirect(url_for("my_bookings"))
 

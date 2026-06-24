@@ -114,67 +114,79 @@
 
 
 <!-- Dashboard Cards -->
-
 <div class="container mt-5">
-
     <div class="row g-4">
 
+        <!-- Total Bookings -->
+
         <div class="col-md-4">
+            <a href="{{ url_for('my_bookings') }}"
+               class="text-decoration-none">
 
-            <div class="dashboard-card bg-primary-card">
+                <div class="dashboard-card bg-primary-card text-white">
 
-                <h2>
-                    <i class="fas fa-calendar-check"></i>
-                </h2>
+                    <h2>
+                        <i class="fas fa-calendar-check"></i>
+                    </h2>
 
-                <h4>Total Bookings</h4>
+                    <h3>Total Bookings</h3>
 
-                <p>
-                    View all your service bookings
-                </p>
+                    <p>
+                        View all your service bookings
+                    </p>
 
-            </div>
+                </div>
 
+            </a>
         </div>
 
+        <!-- Services -->
+
         <div class="col-md-4">
+            <a href="{{ url_for('services') }}"
+               class="text-decoration-none">
 
-            <div class="dashboard-card bg-success-card">
+                <div class="dashboard-card bg-success-card text-white">
 
-                <h2>
-                    <i class="fas fa-tools"></i>
-                </h2>
+                    <h2>
+                        <i class="fas fa-tools"></i>
+                    </h2>
 
-                <h4>Available Services</h4>
+                    <h3>Available Services</h3>
 
-                <p>
-                    Explore and book services
-                </p>
+                    <p>
+                        Explore and book services
+                    </p>
 
-            </div>
+                </div>
 
+            </a>
         </div>
 
+        <!-- Profile -->
+
         <div class="col-md-4">
+            <a href="{{ url_for('profile') }}"
+               class="text-decoration-none">
 
-            <div class="dashboard-card bg-danger-card">
+                <div class="dashboard-card bg-danger-card text-white">
 
-                <h2>
-                    <i class="fas fa-user"></i>
-                </h2>
+                    <h2>
+                        <i class="fas fa-user"></i>
+                    </h2>
 
-                <h4>Profile</h4>
+                    <h3>Profile</h3>
 
-                <p>
-                    Manage account information
-                </p>
+                    <p>
+                        Manage account information
+                    </p>
 
-            </div>
+                </div>
 
+            </a>
         </div>
 
     </div>
-
 </div>
 
 

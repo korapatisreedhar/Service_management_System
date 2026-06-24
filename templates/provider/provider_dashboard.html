@@ -98,8 +98,8 @@
                 <div class="card-body text-center">
 
                     <h2>
-                        Active
-                    </h2>
+    {{ worker.status }}
+</h2>
 
                     <h5>Current Status</h5>
 
@@ -116,8 +116,8 @@
                 <div class="card-body text-center">
 
                     <h2>
-                        Provider
-                    </h2>
+    {{ worker.profession }}
+</h2>
 
                     <h5>Account Type</h5>
 
@@ -159,6 +159,7 @@
                             <th>Address</th>
                             <th>Date</th>
                             <th>Status</th>
+                            <th>Action</th>
 
                         </tr>
 
@@ -166,22 +167,79 @@
 
                     <tbody>
 
-                    {% for job in assigned_jobs %}
+{% for job in assigned_jobs %}
 
-                        <tr>
+<tr>
 
-                            <td>{{ job.id }}</td>
-                            <td>{{ job.service_name }}</td>
-                            <td>{{ job.phone }}</td>
-                            <td>{{ job.address }}</td>
-                            <td>{{ job.booking_date }}</td>
-                            <td>{{ job.status }}</td>
+<td>{{ job.id }}</td>
+<td>{{ job.service_name }}</td>
+<td>{{ job.phone }}</td>
+<td>{{ job.address }}</td>
+<td>{{ job.booking_date }}</td>
 
-                        </tr>
+<td>
 
-                    {% endfor %}
+    {% if job.status == 'Pending' %}
+    <span class="badge bg-warning">
+        Pending
+    </span>
 
-                    </tbody>
+    {% elif job.status == 'Accepted' %}
+    <span class="badge bg-primary">
+        Accepted
+    </span>
+
+    {% elif job.status == 'Completed' %}
+    <span class="badge bg-success">
+        Completed
+    </span>
+
+    {% elif job.status == 'Rejected' %}
+    <span class="badge bg-danger">
+        Rejected
+    </span>
+    {% endif %}
+
+</td>
+
+<td>
+
+    {% if job.status == 'Pending' %}
+
+    <a href="{{ url_for('worker_accept', id=job.id) }}"
+       class="btn btn-success btn-sm">
+        Accept
+    </a>
+
+    <a href="{{ url_for('worker_reject', id=job.id) }}"
+       class="btn btn-danger btn-sm">
+        Reject
+    </a>
+
+    {% elif job.status == 'Accepted' %}
+
+    <a href="{{ url_for('worker_complete', id=job.id) }}"
+       class="btn btn-primary btn-sm">
+        Complete
+    </a>
+
+    {% else %}
+
+    <span class="text-muted">
+        No Action
+    </span>
+
+    {% endif %}
+
+</td>
+
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
 
                 </table>
 

@@ -26,5 +26,9 @@ CREATE TABLE bookings (
     assigned_worker_id INTEGER,
     booking_date TEXT,
     address TEXT,
-    status TEXT DEFAULT 'pending'
+    status TEXT DEFAULT 'pending',
+
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    FOREIGN KEY(service_id) REFERENCES services(id),
+    FOREIGN KEY(assigned_worker_id) REFERENCES users(id)
 );
