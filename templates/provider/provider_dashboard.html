@@ -79,9 +79,7 @@
 
                 <div class="card-body text-center">
 
-                    <h2>
-                        {{ assigned_jobs|length }}
-                    </h2>
+                    <h2>{{ total_jobs }}</h2>
 
                     <h5>Total Jobs</h5>
 
@@ -97,11 +95,8 @@
 
                 <div class="card-body text-center">
 
-                    <h2>
-    {{ worker.status }}
-</h2>
-
-                    <h5>Current Status</h5>
+                    <h2>{{ pending_jobs }}</h2>
+<h5>Pending Jobs</h5>
 
                 </div>
 
@@ -130,6 +125,22 @@
     </div>
 
 </div>
+
+<a href="/worker-dashboard" class="btn btn-primary">
+    All Jobs
+</a>
+
+<a href="/worker-dashboard?status=Pending" class="btn btn-warning">
+    Pending Jobs
+</a>
+
+<a href="/worker-dashboard?status=Accepted" class="btn btn-success">
+    Accepted Jobs
+</a>
+
+<a href="/worker-dashboard?status=Completed" class="btn btn-info">
+    Completed Jobs
+</a>
 
 <!-- Assigned Jobs -->
 

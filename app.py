@@ -307,45 +307,304 @@ def worker_register():
             conn.close()
 
     return render_template("auth/worker_register.html")
+
+
+
+
 @app.route("/worker-dashboard")
+
 def worker_dashboard():
 
+
+
     if "user_id" not in session:
+
         return redirect(url_for("login"))
 
-    if session["role"] != "worker":
+
+
+    if session.get("role") != "worker":
+
         return redirect(url_for("dashboard"))
+
+
 
     conn = get_db_connection()
 
+
+
     # Get worker details
+
     worker = conn.execute(
+
         "SELECT * FROM users WHERE id=?",
+
         (session["user_id"],)
+
     ).fetchone()
 
-    # Show only matching jobs
-    assigned_jobs = conn.execute("""
-        SELECT *
+
+
+    if worker is None:
+
+        conn.close()
+
+        flash("Worker not found.", "danger")
+
+        return redirect(url_for("login"))
+
+
+
+    # Filter from buttons
+
+    status = request.args.get("status")
+
+
+
+    if status:
+
+
+
+        assigned_jobs = conn.execute("""
+
+            SELECT *
+
+            FROM bookings
+
+            WHERE category=?
+
+            AND worker_id=?
+
+            AND status=?
+
+        """,
+
+        (
+
+            worker["profession"],
+
+            session["user_id"],
+
+            status
+
+        )).fetchall()
+
+
+
+    else:
+
+
+
+        assigned_jobs = conn.execute("""
+
+            SELECT *
+
+            FROM bookings
+
+            WHERE category=?
+
+            AND (
+
+                status='Pending'
+
+                OR worker_id=?
+
+            )
+
+        """,
+
+        (
+
+            worker["profession"],
+
+            session["user_id"]
+
+        )).fetchall()
+
+
+
+    # Dashboard Statistics
+
+    total_jobs = conn.execute("""
+
+        SELECT COUNT(*)
+
         FROM bookings
+
         WHERE category=?
+
         AND (
+
             status='Pending'
+
             OR worker_id=?
+
         )
+
     """,
+
     (
+
         worker["profession"],
+
         session["user_id"]
-    )).fetchall()
+
+    )).fetchone()[0]
+
+
+
+    pending_jobs = conn.execute("""
+
+        SELECT COUNT(*)
+
+        FROM bookings
+
+        WHERE category=?
+
+        AND status='Pending'
+
+    """,
+
+    (
+
+        worker["profession"],
+
+    )).fetchone()[0]
+
+
+
+    accepted_jobs = conn.execute("""
+
+        SELECT COUNT(*)
+
+        FROM bookings
+
+        WHERE worker_id=?
+
+        AND status='Accepted'
+
+    """,
+
+    (
+
+        session["user_id"],
+
+    )).fetchone()[0]
+
+
+
+    completed_jobs = conn.execute("""
+
+        SELECT COUNT(*)
+
+        FROM bookings
+
+        WHERE worker_id=?
+
+        AND status='Completed'
+
+    """,
+
+    (
+
+        session["user_id"],
+
+    )).fetchone()[0]
+
+
 
     conn.close()
 
+
+
     return render_template(
+
         "provider/provider_dashboard.html",
+
+        worker=worker,
+
         assigned_jobs=assigned_jobs,
-        worker=worker
+
+        total_jobs=total_jobs,
+
+        pending_jobs=pending_jobs,
+
+        accepted_jobs=accepted_jobs,
+
+        completed_jobs=completed_jobs
+
     )
+
+
+
+
+@app.route("/worker-reject/<int:id>")
+
+def worker_reject():
+
+
+
+    if "user_id" not in session:
+
+        return redirect(url_for("login"))
+
+
+
+    conn = get_db_connection()
+
+
+
+    booking = conn.execute(
+
+        "SELECT * FROM bookings WHERE id=?",
+
+        (id,)
+
+    ).fetchone()
+
+
+
+    if not booking:
+
+        conn.close()
+
+        flash("Booking Not Found", "danger")
+
+        return redirect(url_for("worker_dashboard"))
+
+
+
+    conn.execute("""
+
+        UPDATE bookings
+
+        SET status='Rejected'
+
+        WHERE id=?
+
+    """,
+
+    (id,)
+
+    )
+
+
+
+    conn.commit()
+
+    conn.close()
+
+
+
+    flash("Job Rejected Successfully", "warning")
+
+
+
+    return redirect(url_for("worker_dashboard"))
+
+
+
+
 
 @app.route("/worker-accept/<int:id>")
 def worker_accept(id):
@@ -686,19 +945,61 @@ def book_service():
 
         service_name = request.form["service_name"]
 
-        # Profession matching category
-        category = service_name
+        # ==========================
+        # Profession Mapping
+        # ==========================
+        if service_name in ["AC Repair", "AC Installation"]:
+            category = "AC Technician"
+
+        elif service_name == "Refrigerator Repair":
+            category = "Refrigerator Technician"
+
+        elif service_name == "Washing Machine Repair":
+            category = "Washing Machine Technician"
+
+        elif service_name == "Electrician":
+            category = "Electrician"
+
+        elif service_name == "Plumber":
+            category = "Plumber"
+
+        elif service_name in [
+            "Home Cleaning",
+            "Deep Cleaning",
+            "Bathroom Cleaning",
+            "Kitchen Cleaning"
+        ]:
+            category = "Cleaning Specialist"
+
+        elif service_name == "Painting":
+            category = "Painter"
+
+        elif service_name == "Carpentry":
+            category = "Carpenter"
+
+        elif service_name == "RO Water Purifier Service":
+            category = "RO Technician"
+
+        elif service_name == "Salon at Home":
+            category = "Beautician"
+
+        elif service_name == "Spa at Home":
+            category = "Spa Therapist"
+
+        elif service_name == "Pest Control":
+            category = "Pest Control Specialist"
+
+        else:
+            category = service_name
 
         phone = request.form["phone"]
         address = request.form["address"]
         booking_date = request.form["booking_date"]
 
-        description = request.form.get("description", "")
-
         conn = get_db_connection()
 
         conn.execute("""
-            INSERT INTO bookings(
+            INSERT INTO bookings (
                 user_id,
                 service_name,
                 category,
