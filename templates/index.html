@@ -145,6 +145,25 @@
         Popular Services
     </h2>
 
+    {% set service_images = {
+        'Home Cleaning': ('home-cleaning.jpg', 'Professional cleaning a home window'),
+        'Deep Cleaning': ('deep-cleaning.jpg', 'Deep carpet cleaning in progress'),
+        'Electrician': ('electrician.jpg', 'Electrician repairing a home electrical panel'),
+        'Plumber': ('plumber.jpg', 'Plumbing pipes and fittings'),
+        'AC Repair': ('ac-repair.jpg', 'Technician repairing an air conditioner'),
+        'AC Installation': ('ac-installation.jpg', 'Technician installing home cooling equipment'),
+        'Refrigerator Repair': ('refrigerator-repair.jpg', 'Refrigerated display unit'),
+        'Washing Machine Repair': ('washing-machine-repair.jpg', 'Washing machine in a laundry room'),
+        'RO Water Purifier Service': ('water-purifier.jpg', 'Clean drinking water'),
+        'Pest Control': ('pest-control.jpg', 'Protective-gloved hand performing pest treatment'),
+        'Painting': ('painting.jpg', 'Fresh paint being applied to a wall'),
+        'Carpentry': ('carpentry.jpg', 'Carpenter cutting wood with a workshop saw'),
+        'Bathroom Cleaning': ('bathroom-cleaning.jpg', 'Clean modern bathroom'),
+        'Kitchen Cleaning': ('kitchen-cleaning.jpg', 'Bright home kitchen'),
+        'Salon at Home': ('salon-at-home.jpg', 'Modern hair salon interior'),
+        'Spa at Home': ('spa-at-home.jpg', 'Spa towels and treatment products')
+    } %}
+
     <div class="row g-4">
 
         {% for service in services %}
@@ -153,11 +172,12 @@
 
             <div class="card service-card h-100">
 
-                <div class="card-body text-center">
+                <img src="{{ url_for('static', filename='images/services/' ~ service_images[service][0]) }}"
+                     class="service-image"
+                     alt="{{ service_images[service][1] }}"
+                     width="800" height="500" loading="lazy" decoding="async">
 
-                    <div class="service-icon mb-3">
-                        <i class="fas fa-tools fa-2x"></i>
-                    </div>
+                <div class="card-body text-center">
 
                     <h5>{{ service }}</h5>
 
