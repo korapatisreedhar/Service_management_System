@@ -69,19 +69,15 @@
 
                 <td>
 
-                    <a href="/accept-booking/{{ booking.id }}"
-                       class="btn btn-primary btn-sm">
+                    <form method="post" action="/accept-booking/{{ booking.id }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-primary btn-sm">Accept</button>
+                    </form>
 
-                        Accept
-
-                    </a>
-
-                    <a href="/complete-booking/{{ booking.id }}"
-                       class="btn btn-success btn-sm">
-
-                        Complete
-
-                    </a>
+                    <form method="post" action="/complete-booking/{{ booking.id }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-success btn-sm">Complete</button>
+                    </form>
 
                 </td>
 

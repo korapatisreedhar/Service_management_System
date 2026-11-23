@@ -95,25 +95,25 @@
             </td>
 
             <td>
-                <a href="/approve-user/{{ user.id }}"
-                   class="btn btn-success btn-sm">
-                   Approve
-                </a>
+                <form method="post" action="/approve-user/{{ user.id }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                </form>
             </td>
 
             <td>
-                <a href="/reject-user/{{ user.id }}"
-                   class="btn btn-warning btn-sm">
-                   Reject
-                </a>
+                <form method="post" action="/reject-user/{{ user.id }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-warning btn-sm">Reject</button>
+                </form>
             </td>
 
             <td>
-                <a href="/delete-user/{{ user.id }}"
-                   class="btn btn-danger btn-sm"
-                   onclick="return confirm('Delete this user?')">
-                   Delete
-                </a>
+                <form method="post" action="/delete-user/{{ user.id }}"
+                      onsubmit="return confirm('Delete this user?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
             </td>
 
         </tr>

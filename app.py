@@ -1,6 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from functools import wraps
+import hmac
 import os
+import secrets
 import sqlite3
+from flask import Flask, abort, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -34,6 +37,61 @@ def get_db_connection():
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def role_required(role, approved_worker=False):
+    def decorator(view):
+        @wraps(view)
+        def wrapped(*args, **kwargs):
+            user_id = session.get("user_id")
+            if user_id is None:
+                return redirect(url_for("login", next=request.path))
+
+            conn = get_db_connection()
+            user = conn.execute(
+                "SELECT role, status FROM users WHERE id=?",
+                (user_id,)
+            ).fetchone()
+            conn.close()
+
+            if user is None:
+                session.clear()
+                return redirect(url_for("login"))
+
+            if user["role"] != role:
+                abort(403)
+
+            if approved_worker and user["status"] != "approved":
+                abort(403)
+
+            return view(*args, **kwargs)
+
+        return wrapped
+    return decorator
+
+
+def generate_csrf_token():
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_urlsafe(32)
+    return session["csrf_token"]
+
+
+@app.context_processor
+def inject_csrf_token():
+    return {"csrf_token": generate_csrf_token}
+
+
+@app.before_request
+def protect_post_requests():
+    if request.method == "POST":
+        expected_token = session.get("csrf_token")
+        submitted_token = request.form.get("csrf_token")
+        if (
+            not expected_token
+            or not submitted_token
+            or not hmac.compare_digest(expected_token, submitted_token)
+        ):
+            abort(400, description="Invalid or missing CSRF token.")
 
 
 # ==========================
@@ -357,7 +415,7 @@ def worker_register():
 
 
 @app.route("/worker-dashboard")
-
+@role_required("worker", approved_worker=True)
 def worker_dashboard():
 
 
@@ -583,156 +641,106 @@ def worker_dashboard():
 
 
 
-@app.route("/worker-reject/<int:id>")
-
-def worker_reject():
-
-
-
-    if "user_id" not in session:
-
-        return redirect(url_for("login"))
-
-
-
+@app.route("/worker-reject/<int:id>", methods=["POST"])
+@role_required("worker", approved_worker=True)
+def worker_reject(id):
     conn = get_db_connection()
-
-
-
+    worker = conn.execute(
+        "SELECT profession FROM users WHERE id=?",
+        (session["user_id"],)
+    ).fetchone()
     booking = conn.execute(
-
-        "SELECT * FROM bookings WHERE id=?",
-
-        (id,)
-
+        "SELECT * FROM bookings WHERE id=? AND category=?",
+        (id, worker["profession"])
     ).fetchone()
 
-
-
-    if not booking:
-
+    if not booking or booking["status"] != "Pending":
         conn.close()
+        abort(404)
 
-        flash("Booking Not Found", "danger")
-
-        return redirect(url_for("worker_dashboard"))
-
-
-
-    conn.execute("""
-
+    result = conn.execute("""
         UPDATE bookings
-
         SET status='Rejected'
-
-        WHERE id=?
-
+        WHERE id=? AND category=? AND status='Pending' AND worker_id IS NULL
     """,
-
-    (id,)
-
-    )
-
-
+    (
+        id,
+        worker["profession"]
+    ))
 
     conn.commit()
-
     conn.close()
 
-
-
-    flash("Job Rejected Successfully", "warning")
-
-
-
-    return redirect(url_for("worker_dashboard"))
-
-
-
-
-
-@app.route("/worker-accept/<int:id>")
-def worker_accept(id):
-
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    conn = get_db_connection()
-
-    booking = conn.execute(
-        "SELECT * FROM bookings WHERE id=?",
-        (id,)
-    ).fetchone()
-
-    if booking and booking["status"] == "Pending":
-
-        conn.execute("""
-            UPDATE bookings
-            SET worker_id=?,
-                status='Accepted'
-            WHERE id=?
-        """,
-        (
-            session["user_id"],
-            id
-        ))
-
-        conn.commit()
-
-        flash(
-            "Job Accepted Successfully",
-            "success"
-        )
-
+    if result.rowcount:
+        flash("Job Rejected Successfully", "warning")
     else:
-
-        flash(
-            "This job has already been taken.",
-            "warning"
-        )
-
-    conn.close()
+        flash("This job is no longer available.", "warning")
 
     return redirect(url_for("worker_dashboard"))
-@app.route("/worker-complete/<int:id>")
-def worker_complete(id):
 
-    if "user_id" not in session:
-        return redirect(url_for("login"))
 
+@app.route("/worker-accept/<int:id>", methods=["POST"])
+@role_required("worker", approved_worker=True)
+def worker_accept(id):
     conn = get_db_connection()
-
+    worker = conn.execute(
+        "SELECT profession FROM users WHERE id=?",
+        (session["user_id"],)
+    ).fetchone()
     booking = conn.execute(
-        "SELECT * FROM bookings WHERE id=?",
-        (id,)
+        "SELECT * FROM bookings WHERE id=? AND category=?",
+        (id, worker["profession"])
     ).fetchone()
 
-    if not booking:
-        flash("Booking Not Found", "danger")
+    if not booking or booking["status"] != "Pending":
         conn.close()
-        return redirect(url_for("worker_dashboard"))
+        abort(404)
 
-    if booking["worker_id"] != session["user_id"]:
-        flash("Unauthorized Action", "danger")
-        conn.close()
-        return redirect(url_for("worker_dashboard"))
+    result = conn.execute("""
+        UPDATE bookings
+        SET worker_id=?,
+            status='Accepted'
+        WHERE id=? AND category=? AND status='Pending' AND worker_id IS NULL
+    """,
+    (
+        session["user_id"],
+        id,
+        worker["profession"]
+    ))
 
-    conn.execute("""
+    conn.commit()
+    conn.close()
+
+    if result.rowcount:
+        flash("Job Accepted Successfully", "success")
+    else:
+        flash("This job has already been taken.", "warning")
+
+    return redirect(url_for("worker_dashboard"))
+
+
+@app.route("/worker-complete/<int:id>", methods=["POST"])
+@role_required("worker", approved_worker=True)
+def worker_complete(id):
+    conn = get_db_connection()
+    result = conn.execute("""
         UPDATE bookings
         SET status='Completed'
-        WHERE id=?
+        WHERE id=? AND worker_id=? AND status='Accepted'
     """,
-    (id,)
-    )
-
+    (
+        id,
+        session["user_id"]
+    ))
     conn.commit()
     conn.close()
-
+    if not result.rowcount:
+        abort(404)
     flash("Job Completed Successfully", "success")
-
     return redirect(url_for("worker_dashboard"))
 
 @app.route("/provider-profile", methods=["GET", "POST"])
+@role_required("worker")
 def provider_profile():
 
     if "user_id" not in session:
@@ -741,32 +749,63 @@ def provider_profile():
     conn = get_db_connection()
 
     if request.method == "POST":
+        worker = conn.execute(
+            "SELECT profession FROM users WHERE id=?",
+            (session["user_id"],)
+        ).fetchone()
+        profession = request.form["profession"]
+        profession_changed = profession != worker["profession"]
 
-        conn.execute("""
-            UPDATE users
-            SET
-                name=?,
-                phone=?,
-                address=?,
-                profession=?,
-                experience=?
-            WHERE id=?
-        """,
-        (
-            request.form["name"],
-            request.form["phone"],
-            request.form["address"],
-            request.form["profession"],
-            request.form["experience"],
-            session["user_id"]
-        ))
+        if profession_changed:
+            conn.execute("""
+                UPDATE users
+                SET name=?,
+                    phone=?,
+                    address=?,
+                    profession=?,
+                    experience=?,
+                    status='pending'
+                WHERE id=?
+            """,
+            (
+                request.form["name"],
+                request.form["phone"],
+                request.form["address"],
+                profession,
+                request.form["experience"],
+                session["user_id"]
+            ))
+        else:
+            conn.execute("""
+                UPDATE users
+                SET name=?,
+                    phone=?,
+                    address=?,
+                    profession=?,
+                    experience=?
+                WHERE id=?
+            """,
+            (
+                request.form["name"],
+                request.form["phone"],
+                request.form["address"],
+                profession,
+                request.form["experience"],
+                session["user_id"]
+            ))
 
         conn.commit()
 
-        flash(
-            "Profile Updated Successfully",
-            "success"
-        )
+        if profession_changed:
+            flash(
+                "Profession change submitted for Admin approval. Worker actions are disabled until approval.",
+                "warning"
+            )
+        else:
+            flash(
+                "Profile Updated Successfully",
+                "success"
+            )
 
     worker = conn.execute(
         "SELECT * FROM users WHERE id=?",
@@ -782,6 +821,7 @@ def provider_profile():
 
 
 @app.route('/profile')
+@role_required("customer")
 def profile():
 
     if 'user_id' not in session:
@@ -841,6 +881,7 @@ def login():
                     return redirect(url_for("login"))
 
                 # Create Session
+                session.clear()
                 session["user_id"] = user["id"]
                 session["user_name"] = user["name"]
                 session["role"] = user["role"]
@@ -880,7 +921,7 @@ def login():
 # ==========================
 # LOGOUT
 # ==========================
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 def logout():
 
     session.clear()
@@ -892,6 +933,7 @@ def logout():
 
 
 @app.route("/dashboard")
+@role_required("customer")
 def dashboard():
 
     if "user_id" not in session:
@@ -941,6 +983,7 @@ def services():
 # BOOKINGS
 # ==========================
 @app.route("/my-bookings")
+@role_required("customer")
 def my_bookings():
 
     if "user_id" not in session:
@@ -959,19 +1002,16 @@ def my_bookings():
         "customer/bookings.html",
         bookings=bookings
     )
-@app.route("/user-cancel-booking/<int:id>")
+@app.route("/user-cancel-booking/<int:id>", methods=["POST"])
+@role_required("customer")
 def user_cancel_booking(id):
-
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
     conn = get_db_connection()
 
-    conn.execute(
+    result = conn.execute(
         """
         UPDATE bookings
         SET status='Cancelled'
-        WHERE id=? AND user_id=?
+        WHERE id=? AND user_id=? AND status IN ('Pending', 'Accepted', 'Assigned')
         """,
         (id, session["user_id"])
     )
@@ -979,7 +1019,10 @@ def user_cancel_booking(id):
     conn.commit()
     conn.close()
 
-    flash("Booking Cancelled Successfully", "success")
+    if result.rowcount:
+        flash("Booking Cancelled Successfully", "success")
+    else:
+        flash("This booking cannot be cancelled.", "warning")
 
     return redirect(url_for("my_bookings"))
 
@@ -988,12 +1031,8 @@ def user_cancel_booking(id):
 # BOOK SERVICE
 # ==========================
 @app.route("/book-service", methods=["GET", "POST"])
+@role_required("customer")
 def book_service():
-
-    if "user_id" not in session:
-        return redirect(
-            url_for("login", next=url_for("book_service"))
-        )
 
     if request.method == "POST":
 
@@ -1092,6 +1131,7 @@ def book_service():
 # ADMIN DASHBOARD
 # ==========================
 @app.route("/admin")
+@role_required("admin")
 def admin_dashboard():
 
     if "user_id" not in session:
@@ -1153,6 +1193,7 @@ def admin_dashboard():
     )
 
 @app.route("/admin-users")
+@role_required("admin")
 def admin_users():
 
     if "user_id" not in session:
@@ -1197,15 +1238,9 @@ def admin_users():
         pending_users=pending_users
     )
 
-@app.route("/approve-user/<int:id>")
+@app.route("/approve-user/<int:id>", methods=["POST"])
+@role_required("admin")
 def approve_user(id):
-
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    if session["role"] != "admin":
-        return redirect(url_for("dashboard"))
-
     conn = get_db_connection()
 
     conn.execute(
@@ -1221,15 +1256,9 @@ def approve_user(id):
     return redirect(url_for("admin_users"))
 
 
-@app.route("/reject-user/<int:id>")
+@app.route("/reject-user/<int:id>", methods=["POST"])
+@role_required("admin")
 def reject_user(id):
-
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    if session["role"] != "admin":
-        return redirect(url_for("dashboard"))
-
     conn = get_db_connection()
 
     conn.execute(
@@ -1244,15 +1273,9 @@ def reject_user(id):
 
     return redirect(url_for("admin_users"))
 
-@app.route("/delete-user/<int:id>")
+@app.route("/delete-user/<int:id>", methods=["POST"])
+@role_required("admin")
 def delete_user(id):
-
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    if session["role"] != "admin":
-        return redirect(url_for("dashboard"))
-
     conn = get_db_connection()
 
     conn.execute(
@@ -1268,6 +1291,7 @@ def delete_user(id):
     return redirect(url_for("admin_users"))
 
 @app.route("/admin-services")
+@role_required("admin")
 def admin_services():
 
     if "user_id" not in session:
@@ -1298,15 +1322,9 @@ def admin_services():
     )
 
 
-@app.route("/delete-service/<int:id>")
+@app.route("/delete-service/<int:id>", methods=["POST"])
+@role_required("admin")
 def delete_service(id):
-
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    if session["role"] != "admin":
-        return redirect(url_for("dashboard"))
-
     conn = get_db_connection()
 
     conn.execute(
@@ -1323,6 +1341,7 @@ def delete_service(id):
 
 
 @app.route("/edit-service/<int:id>", methods=["GET", "POST"])
+@role_required("admin")
 def edit_service(id):
 
     if "user_id" not in session:
@@ -1376,6 +1395,7 @@ def edit_service(id):
 
 
 @app.route("/admin-bookings")
+@role_required("admin")
 def admin_bookings():
 
     if "user_id" not in session:
@@ -1427,15 +1447,9 @@ def admin_bookings():
     )
 
 
-@app.route("/cancel-booking/<int:id>")
+@app.route("/cancel-booking/<int:id>", methods=["POST"])
+@role_required("admin")
 def cancel_booking(id):
-
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    if session["role"] != "admin":
-        return redirect(url_for("dashboard"))
-
     conn = get_db_connection()
 
     conn.execute(
@@ -1450,22 +1464,32 @@ def cancel_booking(id):
 
     return redirect(url_for("admin_bookings"))
 
-@app.route("/assign-worker/<int:booking_id>/<int:worker_id>")
+@app.route(
+    "/assign-worker/<int:booking_id>/<int:worker_id>",
+    methods=["POST"]
+)
+@role_required("admin")
 def assign_worker(booking_id, worker_id):
-
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    if session["role"] != "admin":
-        return redirect(url_for("dashboard"))
-
     conn = get_db_connection()
+
+    worker = conn.execute(
+        "SELECT profession FROM users WHERE id=? AND role='worker' AND status='approved'",
+        (worker_id,)
+    ).fetchone()
+    booking = conn.execute(
+        "SELECT category FROM bookings WHERE id=? AND status='Pending'",
+        (booking_id,)
+    ).fetchone()
+
+    if not worker or not booking or worker["profession"] != booking["category"]:
+        conn.close()
+        abort(404)
 
     conn.execute("""
         UPDATE bookings
         SET worker_id=?,
             status='Assigned'
-        WHERE id=?
+        WHERE id=? AND status='Pending'
     """,
     (
         worker_id,
@@ -1484,35 +1508,41 @@ def assign_worker(booking_id, worker_id):
 
 
 
-@app.route("/accept-booking/<int:id>")
+@app.route("/accept-booking/<int:id>", methods=["POST"])
+@role_required("admin")
 def accept_booking(id):
 
     conn = get_db_connection()
 
-    conn.execute(
-        "UPDATE bookings SET status='Accepted' WHERE id=?",
+    result = conn.execute(
+        "UPDATE bookings SET status='Accepted' WHERE id=? AND status='Pending'",
         (id,)
     )
 
     conn.commit()
     conn.close()
 
+    if not result.rowcount:
+        abort(404)
     return redirect(url_for("admin_bookings"))
 
 
-@app.route("/complete-booking/<int:id>")
+@app.route("/complete-booking/<int:id>", methods=["POST"])
+@role_required("admin")
 def complete_booking(id):
 
     conn = get_db_connection()
 
-    conn.execute(
-        "UPDATE bookings SET status='Completed' WHERE id=?",
+    result = conn.execute(
+        "UPDATE bookings SET status='Completed' WHERE id=? AND status='Accepted'",
         (id,)
     )
 
     conn.commit()
     conn.close()
 
+    if not result.rowcount:
+        abort(404)
     return redirect(url_for("admin_bookings"))
 # ==========================
 # RUN APP

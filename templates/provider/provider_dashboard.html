@@ -34,9 +34,10 @@
     My Profile
 </a>
 
-            <a href="/logout" class="btn btn-danger">
-                Logout
-            </a>
+            <form method="post" action="/logout" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger">Logout</button>
+            </form>
 
         </div>
 
@@ -217,22 +218,22 @@
 
     {% if job.status == 'Pending' %}
 
-    <a href="{{ url_for('worker_accept', id=job.id) }}"
-       class="btn btn-success btn-sm">
-        Accept
-    </a>
+    <form method="post" action="{{ url_for('worker_accept', id=job.id) }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-success btn-sm">Accept</button>
+    </form>
 
-    <a href="{{ url_for('worker_reject', id=job.id) }}"
-       class="btn btn-danger btn-sm">
-        Reject
-    </a>
+    <form method="post" action="{{ url_for('worker_reject', id=job.id) }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+    </form>
 
     {% elif job.status == 'Accepted' %}
 
-    <a href="{{ url_for('worker_complete', id=job.id) }}"
-       class="btn btn-primary btn-sm">
-        Complete
-    </a>
+    <form method="post" action="{{ url_for('worker_complete', id=job.id) }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-primary btn-sm">Complete</button>
+    </form>
 
     {% else %}
 
