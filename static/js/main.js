@@ -8,24 +8,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (searchInput) {
 
-        searchInput.addEventListener("keyup", function () {
-
-            let filter = this.value.toLowerCase();
-
-            let cards = document.querySelectorAll(".service-card");
+        searchInput.addEventListener("input", function () {
+            const filter = this.value.trim().toLowerCase();
+            const cards = document.querySelectorAll(".service-card");
+            const emptyMessage = document.getElementById("serviceSearchEmpty");
+            let visibleCount = 0;
 
             cards.forEach(card => {
+                const matches = card.innerText.toLowerCase().includes(filter);
+                card.style.display = matches ? "" : "none";
 
-                let text = card.innerText.toLowerCase();
-
-                if (text.includes(filter)) {
-                    card.style.display = "";
-                } else {
-                    card.style.display = "none";
+                if (matches) {
+                    visibleCount += 1;
                 }
-
             });
 
+            if (emptyMessage) {
+                emptyMessage.classList.toggle("d-none", visibleCount > 0);
+            }
         });
 
     }
