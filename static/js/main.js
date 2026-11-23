@@ -4,6 +4,15 @@
 
 document.addEventListener("DOMContentLoaded", function () {
 
+    const backendUrl = window.SERVICE_BACKEND_URL;
+    if (!backendUrl) {
+        throw new Error("The Flask backend URL is not configured.");
+    }
+
+    document.querySelectorAll("[data-backend-path]").forEach(link => {
+        link.href = new URL(link.dataset.backendPath, backendUrl).href;
+    });
+
     const searchInput = document.getElementById("serviceSearch");
 
     if (searchInput) {

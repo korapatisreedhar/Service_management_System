@@ -1,11 +1,26 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
+import os
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = "service_management_secret_key"
+app_environment = os.environ.get("APP_ENV", "development")
+secret_key = os.environ.get("SECRET_KEY")
 
-DATABASE = "database.db"
+if app_environment == "production" and not secret_key:
+    raise RuntimeError("SECRET_KEY must be configured in production.")
+
+app.config.update(
+    SECRET_KEY=secret_key or "local-development-only-secret",
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=app_environment == "production",
+)
+
+DATABASE = os.environ.get(
+    "DATABASE_PATH",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "database.db")
+)
 
 
 # ==========================
@@ -15,6 +30,7 @@ DATABASE = "database.db"
 # DATABASE CONNECTION
 # ==========================
 def get_db_connection():
+    os.makedirs(os.path.dirname(os.path.abspath(DATABASE)), exist_ok=True)
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
@@ -90,6 +106,18 @@ CREATE TABLE IF NOT EXISTS bookings(
 # CREATE DEFAULT ADMIN
 # ==========================
 def create_admin():
+    if app_environment == "production":
+        admin_email = os.environ.get("ADMIN_EMAIL")
+        admin_password = os.environ.get("ADMIN_PASSWORD")
+
+        if not admin_email or not admin_password:
+            raise RuntimeError(
+                "ADMIN_EMAIL and ADMIN_PASSWORD must be configured in production."
+            )
+    else:
+        admin_email = os.environ.get("ADMIN_EMAIL", "admin@gmail.com")
+        admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+
     conn = get_db_connection()
 
     admin = conn.execute(
@@ -104,8 +132,8 @@ def create_admin():
         """,
         (
             "Admin",
-            "admin@gmail.com",
-            generate_password_hash("admin123"),
+            admin_email,
+            generate_password_hash(admin_password),
             "admin",
             "approved"
         ))
@@ -146,6 +174,17 @@ conn.close()
 # ==========================
 # HOME PAGE
 # ==========================
+@app.route("/health")
+def health():
+    conn = get_db_connection()
+    try:
+        conn.execute("SELECT 1")
+    finally:
+        conn.close()
+
+    return {"status": "ok"}
+
+
 @app.route("/")
 def home():
     services = [
@@ -800,6 +839,13 @@ def login():
                 session["user_name"] = user["name"]
                 session["role"] = user["role"]
 
+                next_page = request.form.get("next")
+                if (
+                    session["role"] == "customer"
+                    and next_page == url_for("book_service")
+                ):
+                    return redirect(next_page)
+
                 flash(
                     "Login Successful",
                     "success"
@@ -939,7 +985,9 @@ def user_cancel_booking(id):
 def book_service():
 
     if "user_id" not in session:
-        return redirect(url_for("login"))
+        return redirect(
+            url_for("login", next=url_for("book_service"))
+        )
 
     if request.method == "POST":
 
