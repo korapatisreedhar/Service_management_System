@@ -110,9 +110,15 @@ def create_admin():
         admin_email = os.environ.get("ADMIN_EMAIL")
         admin_password = os.environ.get("ADMIN_PASSWORD")
 
+        if not admin_email and not admin_password:
+            app.logger.warning(
+                "ADMIN_EMAIL and ADMIN_PASSWORD are unset; skipping admin creation."
+            )
+            return
+
         if not admin_email or not admin_password:
             raise RuntimeError(
-                "ADMIN_EMAIL and ADMIN_PASSWORD must be configured in production."
+                "ADMIN_EMAIL and ADMIN_PASSWORD must both be configured."
             )
     else:
         admin_email = os.environ.get("ADMIN_EMAIL", "admin@gmail.com")
