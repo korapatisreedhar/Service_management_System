@@ -1,2 +1,2 @@
 window.SERVICE_BACKEND_URL =
-    "https://service-management-system-korapatisreedhar-api.onrender.com";
+    "https://service-management-system-enxi.onrender.com";
